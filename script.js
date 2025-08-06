@@ -104,9 +104,10 @@ function checkCollision() {
       coinsCollected++;
       coinCountDisplay.textContent = `Monedas recogidas: ${coinsCollected} / 5`;
       if (coinsCollected === 5) {
-        alert('¡Felicidades! Recogiste todas las monedas.');
+        alert('🎉 ¡Felicidades! Recogiste todas las monedas. Tu habilidad merece algo grande... Ahora solo falta tu voto para que ganemos el “Proyecto Popular”. Si ganamos, podrías ser parte de una sorpresa exclusiva solo para los que nos ayudaron. ¡Hacé clic en el botón de Facebook y apoyanos con tu voto! 🙌');
         window.location.href = 'https://motordeal.store';
       }
     }
   });
 }
+

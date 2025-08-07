@@ -2,202 +2,206 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Juego de Autos</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>MotorDeal Game</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body {
-      margin: 0;
-      padding: 0;
       background-color: black;
-      color: #fff;
-      font-family: sans-serif;
+      color: white;
       overflow: hidden;
+      margin: 0;
+      font-family: sans-serif;
       touch-action: none;
     }
 
     #gameContainer {
       position: relative;
       width: 100vw;
-      height: 100vh;
+      height: 70vh;
+      margin: auto;
+      background-color: #222;
+      border: 2px solid #FFD700;
       overflow: hidden;
     }
 
     #car {
-      position: absolute;
-      width: 60px;
+      width: 40px;
       height: 60px;
       background-image: url('imagenes/auto.png');
       background-size: contain;
       background-repeat: no-repeat;
-      transform: rotate(180deg);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(180deg);
     }
 
     .coin {
-      position: absolute;
-      width: 40px;
-      height: 40px;
+      width: 30px;
+      height: 30px;
       background-image: url('imagenes/moneda.png');
       background-size: contain;
       background-repeat: no-repeat;
+      position: absolute;
     }
 
-    #coinCount {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.7);
-      padding: 8px 16px;
-      border-radius: 10px;
-      color: #FFD700;
-      font-weight: bold;
-      z-index: 10;
-    }
-
-    .controls {
-      position: absolute;
+    #joystick {
+      position: fixed;
       bottom: 20px;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
+      left: 20px;
+      width: 100px;
+      height: 100px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 50%;
+      display: none;
+      justify-content: center;
       align-items: center;
-      gap: 10px;
-      z-index: 10;
     }
 
-    .controls .row {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
+    #stick {
+      width: 40px;
+      height: 40px;
+      background: #FFD700;
+      border-radius: 50%;
+      position: absolute;
+    }
+
+    @media (pointer: coarse) {
+      #joystick {
+        display: flex;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="text-center mt-3">
+    <h1 style="color: #FFD700">MotorDeal</h1>
+    <p>Utiliza el joystick virtual para recoger las monedas</p>
+  </div>
   <div id="gameContainer">
-    <h1>MotorDeal</h1>
-    <p>¡Usa el joystick o las teclas para reoger todas las monedas!</p>
-    <p>Encuentranos en: https://motordeal.store/</p>
-    <div id="coinCount">Monedas recogidas: 0 / 5</div>
     <div id="car"></div>
-    <div class="controls d-md-none">
-      <div class="row">
-        <button class="btn btn-warning" onclick="moveManual('up')">↑</button>
-      </div>
-      <div class="row">
-        <button class="btn btn-warning" onclick="moveManual('left')">←</button>
-        <button class="btn btn-warning" onclick="moveManual('down')">↓</button>
-        <button class="btn btn-warning" onclick="moveManual('right')">→</button>
-      </div>
-    </div>
+  </div>
+  <div class="text-center mt-3">
+    <p>Visítanos en: <a href="https://motordeal.store/" target="_blank" style="color:#FFD700">https://motordeal.store/</a></p>
+  </div>
+  <div id="joystick">
+    <div id="stick"></div>
   </div>
 
   <script>
-    const gameContainer = document.getElementById('gameContainer');
-    const car = document.getElementById('car');
-    const coinCountDisplay = document.getElementById('coinCount');
-
-    let carX = 100, carY = 100, carAngle = 180;
-    let speed = 5;
+    const car = document.getElementById("car");
+    const container = document.getElementById("gameContainer");
+    const joystick = document.getElementById("joystick");
+    const stick = document.getElementById("stick");
+    let x = container.clientWidth / 2;
+    let y = container.clientHeight / 2;
+    let dx = 0;
+    let dy = 0;
+    let speed = 2;
     let coinsCollected = 0;
-    let keys = {};
+    const totalCoins = 5;
 
-    car.style.left = `${carX}px`;
-    car.style.top = `${carY}px`;
-
-    // Crear 5 monedas
-    for (let i = 0; i < 5; i++) {
-      const coin = document.createElement('div');
-      coin.classList.add('coin');
-      positionCoin(coin);
-      gameContainer.appendChild(coin);
+    function rotateCar(dx, dy) {
+      if (dx === 0 && dy === 0) return;
+      const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+      car.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
     }
 
-    function positionCoin(coin) {
-      const padding = 80;
-      const maxX = gameContainer.clientWidth - 40 - padding;
-      const maxY = gameContainer.clientHeight - 40 - padding;
-      const x = Math.random() * maxX + padding / 2;
-      const y = Math.random() * maxY + padding / 2;
-      coin.style.left = `${x}px`;
-      coin.style.top = `${y}px`;
+    function spawnCoin() {
+      const coin = document.createElement("div");
+      coin.className = "coin";
+      const padding = 40;
+      coin.style.left = `${Math.random() * (container.clientWidth - padding * 2) + padding}px`;
+      coin.style.top = `${Math.random() * (container.clientHeight - padding * 2) + padding}px`;
+      container.appendChild(coin);
     }
 
-    function moveManual(dir) {
-      switch (dir) {
-        case 'up': carY -= speed; carAngle = 0; break;
-        case 'down': carY += speed; carAngle = 180; break;
-        case 'left': carX -= speed; carAngle = 270; break;
-        case 'right': carX += speed; carAngle = 90; break;
-      }
-      updateCarPosition();
-    }
+    for (let i = 0; i < totalCoins; i++) spawnCoin();
 
-    function updateCarPosition() {
-      const maxX = gameContainer.clientWidth - 60;
-      const maxY = gameContainer.clientHeight - 60;
-      carX = Math.max(0, Math.min(maxX, carX));
-      carY = Math.max(0, Math.min(maxY, carY));
-      car.style.left = `${carX}px`;
-      car.style.top = `${carY}px`;
-      car.style.transform = `rotate(${carAngle}deg)`;
-      checkCollision();
-    }
+    function update() {
+      x += dx * speed;
+      y += dy * speed;
 
-    function checkCollision() {
-      const carRect = car.getBoundingClientRect();
-      const coins = document.querySelectorAll('.coin');
-      coins.forEach(coin => {
-        const rect = coin.getBoundingClientRect();
-        const reduced = {
-          left: rect.left + rect.width * 0.25,
-          right: rect.right - rect.width * 0.25,
-          top: rect.top + rect.height * 0.25,
-          bottom: rect.bottom - rect.height * 0.25,
-        };
-        const overlap = !(
-          carRect.right < reduced.left ||
-          carRect.left > reduced.right ||
-          carRect.bottom < reduced.top ||
-          carRect.top > reduced.bottom
-        );
-        if (overlap) {
+      const maxX = container.clientWidth - car.clientWidth / 2;
+      const maxY = container.clientHeight - car.clientHeight / 2;
+      const minX = car.clientWidth / 2;
+      const minY = car.clientHeight / 2;
+
+      x = Math.max(minX, Math.min(maxX, x));
+      y = Math.max(minY, Math.min(maxY, y));
+
+      car.style.left = `${x}px`;
+      car.style.top = `${y}px`;
+
+      document.querySelectorAll(".coin").forEach(coin => {
+        const rect1 = car.getBoundingClientRect();
+        const rect2 = coin.getBoundingClientRect();
+        const shrink = 0.5;
+        if (
+          rect1.left < rect2.right - rect2.width * (1 - shrink) &&
+          rect1.right > rect2.left + rect2.width * (1 - shrink) &&
+          rect1.top < rect2.bottom - rect2.height * (1 - shrink) &&
+          rect1.bottom > rect2.top + rect2.height * (1 - shrink)
+        ) {
           coin.remove();
           coinsCollected++;
-          coinCountDisplay.textContent = `Monedas recogidas: ${coinsCollected} / 5`;
-          if (coinsCollected === 5) {
-            alert("🎉 ¡Felicidades! Recogiste todas las monedas. Ahora solo falta tu voto para que ganemos el 'Proyecto Popular'. ¡Hacé clic en el botón de Facebook y apoyanos con tu voto! 🙌");
+          if (coinsCollected === totalCoins) {
+            alert("¡Felicidades! Has recogido todas las monedas. Necesitamos tu voto para ganar el proyecto popular. ¡Báncanos porfa!");
             window.location.href = "https://www.facebook.com/share/171NxZ5iez/?mibextid=wwXIfr";
           }
         }
       });
+
+      requestAnimationFrame(update);
     }
 
-    document.addEventListener("keydown", (e) => {
-      const k = e.key.toLowerCase();
-      if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(k)) {
-        e.preventDefault();
-        keys[k] = true;
-      }
+    update();
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp" || e.key === "w") dy = -1;
+      else if (e.key === "ArrowDown" || e.key === "s") dy = 1;
+      else if (e.key === "ArrowLeft" || e.key === "a") dx = -1;
+      else if (e.key === "ArrowRight" || e.key === "d") dx = 1;
+      rotateCar(dx, dy);
     });
 
-    document.addEventListener("keyup", (e) => {
-      keys[e.key.toLowerCase()] = false;
+    document.addEventListener("keyup", e => {
+      if (["ArrowUp", "ArrowDown", "w", "s"].includes(e.key)) dy = 0;
+      if (["ArrowLeft", "ArrowRight", "a", "d"].includes(e.key)) dx = 0;
     });
 
-    function gameLoop() {
-      if (keys["arrowup"] || keys["w"]) { carY -= speed; carAngle = 0; }
-      if (keys["arrowdown"] || keys["s"]) { carY += speed; carAngle = 180; }
-      if (keys["arrowleft"] || keys["a"]) { carX -= speed; carAngle = 270; }
-      if (keys["arrowright"] || keys["d"]) { carX += speed; carAngle = 90; }
-      updateCarPosition();
-      requestAnimationFrame(gameLoop);
-    }
+    // Joystick
+    let dragging = false;
+    let joyCenterX, joyCenterY;
 
-    gameLoop();
+    joystick.addEventListener("touchstart", e => {
+      dragging = true;
+      joyCenterX = joystick.offsetLeft + joystick.offsetWidth / 2;
+      joyCenterY = joystick.offsetTop + joystick.offsetHeight / 2;
+    });
+
+    joystick.addEventListener("touchmove", e => {
+      if (!dragging) return;
+      const touch = e.touches[0];
+      const offsetX = touch.clientX - joyCenterX;
+      const offsetY = touch.clientY - joyCenterY;
+      const length = Math.min(Math.hypot(offsetX, offsetY), 40);
+      const angle = Math.atan2(offsetY, offsetX);
+      stick.style.left = `${40 + length * Math.cos(angle)}px`;
+      stick.style.top = `${40 + length * Math.sin(angle)}px`;
+      dx = Math.round(Math.cos(angle));
+      dy = Math.round(Math.sin(angle));
+      rotateCar(dx, dy);
+    });
+
+    joystick.addEventListener("touchend", e => {
+      dragging = false;
+      stick.style.left = `40px`;
+      stick.style.top = `40px`;
+      dx = 0;
+      dy = 0;
+    });
   </script>
 </body>
 </html>
-
-
-

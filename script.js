@@ -1,95 +1,87 @@
-const car = document.getElementById('car');
-const gameArea = document.getElementById('game-area');
-const coinCountDisplay = document.getElementById('coin-count');
+const car = document.getElementById("car");
+const coins = document.querySelectorAll(".coin");
+const coinCountDisplay = document.getElementById("coinCount");
+const gameContainer = document.getElementById("gameContainer");
+
+let carX = 100;
+let carY = 100;
+let carAngle = 180;
+let speed = 4;
 let coinsCollected = 0;
 
-for (let i = 0; i < 5; i++) {
-  const coin = document.createElement('img');
-  coin.src = 'imagenes/moneda.png'; // Usa tu imagen aquí
-  coin.classList.add('coin');
-  coin.style.top = `${Math.floor(Math.random() * 350)}px`;
-  coin.style.left = `${Math.floor(Math.random() * 580)}px`;
-  gameArea.appendChild(coin);
+car.style.left = carX + "px";
+car.style.top = carY + "px";
+
+// Posicionar monedas aleatoriamente dentro del área visible
+function positionCoins() {
+  const padding = 60;
+  coins.forEach((coin) => {
+    const maxX = gameContainer.clientWidth - 40 - padding;
+    const maxY = gameContainer.clientHeight - 40 - padding;
+    const x = Math.floor(Math.random() * maxX) + padding / 2;
+    const y = Math.floor(Math.random() * maxY) + padding / 2;
+    coin.style.left = x + "px";
+    coin.style.top = y + "px";
+  });
 }
 
-let posX = gameArea.offsetWidth / 2 - 20;
-let posY = gameArea.offsetHeight - 70;
+positionCoins();
 
-document.addEventListener('keydown', (e) => {
-  const step = 10;
-  const key = e.key.toLowerCase();
+// Movimiento por teclado
+let keys = {};
 
-  if (key === 'arrowleft' || key === 'a') {
-    posX -= step;
-    rotation = 90;
+document.addEventListener("keydown", (e) => {
+  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "w", "a", "s", "d"].includes(e.key.toLowerCase())) {
+    e.preventDefault();
+    keys[e.key.toLowerCase()] = true;
   }
-  if (key === 'arrowright' || key === 'd') {
-    posX += step;
-    rotation = -90;
-  }
-  if (key === 'arrowup' || key === 'w') {
-    posY -= step;
-    rotation = 180;
-  }
-  if (key === 'arrowdown' || key === 's') {
-    posY += step;
-    rotation = 0;
-  }
-
-  posX = Math.max(0, Math.min(posX, gameArea.offsetWidth - 40));
-  posY = Math.max(0, Math.min(posY, gameArea.offsetHeight - 60));
-
-  car.style.left = `${posX}px`;
-  car.style.top = `${posY}px`;
-  car.style.transform = `rotate(${rotation}deg)`;
-
-  checkCollision();
 });
 
+document.addEventListener("keyup", (e) => {
+  keys[e.key.toLowerCase()] = false;
+});
 
-function move(direction) {
-  const step = 10;
+// Movimiento del auto
+function moveCar() {
+  if (keys["arrowup"] || keys["w"]) {
+    carY -= speed;
+    carAngle = 0;
+  }
+  if (keys["arrowdown"] || keys["s"]) {
+    carY += speed;
+    carAngle = 180;
+  }
+  if (keys["arrowleft"] || keys["a"]) {
+    carX -= speed;
+    carAngle = 270;
+  }
+  if (keys["arrowright"] || keys["d"]) {
+    carX += speed;
+    carAngle = 90;
+  }
 
-  if (direction === 'left') {
-    posX -= step;
-    rotation = 90;
-  }
-  if (direction === 'right') {
-    posX += step;
-    rotation = -90;
-  }
-  if (direction === 'up') {
-    posY -= step;
-    rotation = 180;
-  }
-  if (direction === 'down') {
-    posY += step;
-    rotation = 0;
-  }
-
-  posX = Math.max(0, Math.min(posX, gameArea.offsetWidth - 40));
-  posY = Math.max(0, Math.min(posY, gameArea.offsetHeight - 60));
-
-  car.style.left = `${posX}px`;
-  car.style.top = `${posY}px`;
-  car.style.transform = `rotate(${rotation}deg)`;
+  car.style.left = carX + "px";
+  car.style.top = carY + "px";
+  car.style.transform = `rotate(${carAngle}deg)`;
 
   checkCollision();
+  requestAnimationFrame(moveCar);
 }
 
+moveCar();
+
+// Detección de colisión con hitbox reducida (50%)
 function checkCollision() {
   const carRect = car.getBoundingClientRect();
-  const coins = document.querySelectorAll('.coin');
 
   coins.forEach((coin) => {
     const coinRect = coin.getBoundingClientRect();
 
-    // Reducir la hitbox al 50%
     const reducedCoinRect = {
-      left: coinRect.left + coinRect.width * 0.50,
-      right: coinRect.right - coinRect.width * 0.50,
-      top: coinRect.top + coinRect.height * 0.50,
-      bottom: coinRect.bottom - coinRect.height * 0.50,
+      left: coinRect.left + coinRect.width * 0.25,
+      right: coinRect.right - coinRect.width * 0.25,
+      top: coinRect.top + coinRect.height * 0.25,
+      bottom: coinRect.bottom - coinRect.height * 0.25,
     };
 
     const overlap = !(
@@ -104,10 +96,49 @@ function checkCollision() {
       coinsCollected++;
       coinCountDisplay.textContent = `Monedas recogidas: ${coinsCollected} / 5`;
       if (coinsCollected === 5) {
-        alert('🎉 ¡Felicidades! Recogiste todas las monedas. Tu habilidad merece algo grande... Ahora solo falta tu voto para que ganemos el “Proyecto Popular”. Si ganamos, podrías ser parte de una sorpresa exclusiva solo para los que nos ayudaron. ¡Hacé clic en el botón de Facebook y apoyanos con tu voto! 🙌');
-        window.location.href = 'https://motordeal.store';
+        alert("🎉 ¡Felicidades! Recogiste todas las monedas. Tu habilidad merece algo grande... Ahora solo falta tu voto para que ganemos el “Proyecto Popular”. Si ganamos, podrías ser parte de una sorpresa exclusiva solo para los que nos ayudaron. ¡Hacé clic en el botón de Facebook y apoyanos con tu voto! 🙌");
+        window.location.href = " https://www.facebook.com/share/171NxZ5iez/?mibextid=wwXIfr "; // Reemplazá por tu link
       }
     }
   });
 }
+
+// Joystick virtual para móviles
+const joystick = nipplejs.create({
+  zone: document.getElementById('joystick'),
+  mode: 'static',
+  position: { left: '60px', bottom: '60px' },
+  color: 'white'
+});
+
+joystick.on('dir', (evt, data) => {
+  if (data.direction) {
+    switch (data.direction.angle) {
+      case 'up':
+        carY -= speed;
+        carAngle = 0;
+        break;
+      case 'down':
+        carY += speed;
+        carAngle = 180;
+        break;
+      case 'left':
+        carX -= speed;
+        carAngle = 270;
+        break;
+      case 'right':
+        carX += speed;
+        carAngle = 90;
+        break;
+    }
+
+    car.style.left = carX + "px";
+    car.style.top = carY + "px";
+    car.style.transform = `rotate(${carAngle}deg)`;
+
+    checkCollision();
+  }
+});
+
+
 
